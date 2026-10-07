@@ -1,0 +1,15 @@
+{
+  "name": "orbit-plugins",
+  "version": "1.0.0",
+  "description": "Community plugin submissions for Orbit",
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/validate-plugin.mjs plugins",
+    "validate": "node scripts/validate-plugin.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Praveen-2595/orbit-plugins.git"
+  },
+  "license": "MIT"
+}
