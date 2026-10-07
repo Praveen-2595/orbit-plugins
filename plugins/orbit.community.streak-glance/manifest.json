@@ -1,0 +1,26 @@
+{
+  "manifestVersion": 1,
+  "id": "orbit.community.streak-glance",
+  "name": "Streak Glance Widget",
+  "version": "1.0.0",
+  "description": "A clean, distraction-free widget displaying your daily streak with motivational milestone progress.",
+  "author": {
+    "name": "Alex Vance",
+    "url": "https://github.com/alexvance"
+  },
+  "trust": "sandboxed",
+  "entry": "index.html",
+  "capabilities": [
+    {
+      "name": "widget:render",
+      "required": true
+    },
+    {
+      "name": "dashboard:read",
+      "scope": ["streak", "level", "xp"],
+      "required": true
+    }
+  ],
+  "platforms": ["web", "desktop"],
+  "icon": "flame"
+}

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Streak Glance Widget</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #0b0d13;
+      color: #f4f5f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 16px;
+      user-select: none;
+      overflow: hidden;
+    }
+    .card {
+      border: 1px solid #1c1f27;
+      border-radius: 10px;
+      padding: 14px 16px;
+      background: #0f121a;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #ff9d42;
+      background: rgba(255, 157, 66, 0.12);
+      border: 1px solid rgba(255, 157, 66, 0.25);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+    .streak-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .streak-num {
+      font-size: 32px;
+      font-weight: 700;
+      color: #f4f5f7;
+      line-height: 1;
+    }
+    .streak-label {
+      font-size: 13px;
+      color: #8e939d;
+      font-weight: 500;
+    }
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #8e939d;
+      border-top: 1px solid #1c1f27;
+      padding-top: 8px;
+    }
+    .level-tag {
+      color: #f4f5f7;
+      font-weight: 600;
+    }
+    .loading {
+      font-size: 12px;
+      color: #8e939d;
+      text-align: center;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="widget-root">
+    <div class="loading" id="loading-state">Connecting to Orbit...</div>
+  </div>
+
+  <script>
+    let reqId = 1;
+    const callbacks = new Map();
+
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (!msg || typeof msg !== 'object') return;
+
+      // Handle broker responses
+      if (msg.jsonrpc === '2.0' && msg.id !== undefined) {
+        const resolve = callbacks.get(msg.id);
+        if (resolve) {
+          callbacks.delete(msg.id);
+          resolve(msg.result || {});
+        }
+      }
+    });
+
+    function rpcRequest(method, params = {}) {
+      return new Promise((resolve) => {
+        const id = reqId++;
+        callbacks.set(id, resolve);
+        window.parent.postMessage(
+          { jsonrpc: '2.0', id, method, params },
+          '*'
+        );
+      });
+    }
+
+    async function loadWidget() {
+      // 1. Handshake with broker
+      window.parent.postMessage({ jsonrpc: '2.0', method: 'plugin:ready' }, '*');
+
+      try {
+        // 2. Request data via dashboard:read
+        const res = await rpcRequest('dashboard:read', { fields: ['streak', 'level', 'xp'] });
+        const streak = res.streak ?? 0;
+        const level = res.level ?? 1;
+        const xp = res.xp ?? 0;
+
+        const root = document.getElementById('widget-root');
+        root.innerHTML = `
+          <div class="header">
+            <span class="badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2c1.5 3 4 5.5 4 8.5 0 3-2 5.5-4 5.5s-4-2.5-4-5.5c0-3 2.5-5.5 4-8.5z"/>
+              </svg>
+              Daily Momentum
+            </span>
+            <span style="font-size: 11px; color: #8e939d;">COMMUNITY</span>
+          </div>
+
+          <div class="streak-row">
+            <div class="streak-num">${streak}</div>
+            <div class="streak-label">day streak</div>
+          </div>
+
+          <div class="footer">
+            <span>Rank: <span class="level-tag">Level ${level}</span></span>
+            <span>${xp} XP</span>
+          </div>
+        `;
+      } catch (err) {
+        document.getElementById('loading-state').innerText = 'Unable to load momentum data';
+      }
+    }
+
+    loadWidget();
+  </script>
+</body>
+</html>
